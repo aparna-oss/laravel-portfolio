@@ -13,9 +13,25 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
 
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Create all Laravel storage and cache directories
+RUN mkdir -p \
+    /var/www/html/storage/framework/cache \
+    /var/www/html/storage/framework/sessions \
+    /var/www/html/storage/framework/views \
+    /var/www/html/storage/logs \
+    /var/www/html/bootstrap/cache
 
-RUN sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' /etc/apache2/sites-available/000-default.conf
+# Make sure Laravel has the required permissions
+RUN chown -R www-data:www-data \
+    /var/www/html/storage \
+    /var/www/html/bootstrap/cache \
+    && chmod -R 775 \
+    /var/www/html/storage \
+    /var/www/html/bootstrap/cache
+
+# Configure Apache to use Laravel public directory
+RUN sed -i 's#DocumentRoot /var/www/html#DocumentRoot /var/www/html/public#' \
+    /etc/apache2/sites-available/000-default.conf
 
 RUN printf '<Directory /var/www/html/public>\n\
     AllowOverride All\n\
@@ -23,6 +39,12 @@ RUN printf '<Directory /var/www/html/public>\n\
 </Directory>\n' > /etc/apache2/conf-available/laravel.conf
 
 RUN a2enconf laravel
+
+# Clear Laravel cached configuration/routes/views
+RUN php artisan config:clear \
+    && php artisan cache:clear \
+    && php artisan view:clear \
+    && php artisan route:clear
 
 EXPOSE 80
 
