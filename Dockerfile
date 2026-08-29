@@ -40,12 +40,6 @@ RUN printf '<Directory /var/www/html/public>\n\
 
 RUN a2enconf laravel
 
-# Clear Laravel cached configuration/routes/views
-RUN php artisan config:clear \
-    && php artisan cache:clear \
-    && php artisan view:clear \
-    && php artisan route:clear
-
 EXPOSE 80
 
 CMD ["apache2-foreground"]
